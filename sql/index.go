@@ -15,9 +15,11 @@ type PGClient interface {
 func BuildPostgresClient(connectionString string) (PGClient, error) {
 
 	db, err := sql.Open("postgres", connectionString)
-	log.Println("ERROR opening postgres connection with github.com/neurocollective/go_utils.BuildPostgresClient() ->")
-	log.Println(err.Error())
 	if err != nil {
+
+        log.Println("ERROR opening postgres connection with github.com/neurocollective/go_utils.BuildPostgresClient() ->")
+        log.Println(err.Error())
+
 		return nil, err
 	}
 
@@ -29,24 +31,29 @@ func QueryForStructs[T any](
 	client PGClient, 
 	scanRowToObject func(*sql.Rows, *T) error, 
 	queryString string,
-	args ...string,
+	args ...any,
 ) ([]T, error) {
 
-	rows, queryError := client.Query(queryString)
+	rows, queryError := client.Query(queryString, args...)
 
 	var empty []T
 
 	if queryError != nil {
-		return empty, queryError 	
+		return empty, queryError
 	}
 
 	capacity := 100
 
-	rowArray := make([]T, 0, capacity)
+	rowArray := make([]T, capacity, capacity)
 	var index int
 
+    // thereIsANextRow := rows.Next()
+
 	for rows.Next() {
-		var receiverObject *T
+
+        log.Println("index:", index)
+
+		receiverObject := new(T)
 
 		if index == capacity - 1 {
 			capacity += 100
@@ -60,7 +67,10 @@ func QueryForStructs[T any](
 
 		scanError := scanRowToObject(rows, receiverObject)
 
+        log.Println("receiverObject:", receiverObject)
+
 		if scanError != nil {
+            log.Println("scanError", scanError.Error())
 			return empty, scanError
 		}
 
@@ -68,5 +78,16 @@ func QueryForStructs[T any](
 		index++
 	}
 
-	return rowArray, nil
+    log.Println("index:", index)
+
+    getNextRowError := rows.Err()
+
+    if getNextRowError != nil {
+        log.Println("error getting next row:", getNextRowError.Error())
+        return empty, getNextRowError
+    }
+
+    log.Println()
+
+	return rowArray[:index], nil
 }
