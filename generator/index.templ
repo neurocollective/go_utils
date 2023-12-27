@@ -1,0 +1,16 @@
+package $packageName
+
+// insert each field name as $fieldN
+func GetFrom$structName[T any]($lowerCaseStructName *$structName, structFieldName string) (*T, error) {
+	switch structFieldName {
+		case "$fieldN":
+			value, ok := ($lowerCaseStructName.$fieldN).T
+			if !ok {
+				return value, errors.New("$fieldN cannot be retrieved as requested type.")
+			}
+			return &value, nil
+		// ... loop through fields here
+		default:
+			return nil, errors.New(structFieldName + " is not a valid struct field in $structName")
+	}
+}

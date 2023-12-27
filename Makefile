@@ -5,3 +5,5 @@ db/local:
 	@psql -f db/initial_seed.sql "postgresql://postgres:postgres@localhost:5432/postgres"
 psql:
 	@psql "postgresql://postgres:postgres@localhost:5432/postgres"
+test/int:
+	go test -v ./sql

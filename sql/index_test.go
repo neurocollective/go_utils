@@ -1,4 +1,4 @@
-package go_utils
+ package go_utils
 
 import (
 	"testing"
@@ -8,11 +8,47 @@ import (
 )
 
 type TestStruct struct {
-	id int
-	name string
+	id int `nc:"id"`
+	name string `nc:"name"`
+}
+
+func (t TestStruct) GetStructKeys() []string {
+	return []string { "id", "name" }
+}
+
+func GetFromTestStruct[T any](testStruct TestStruct, structFieldName string) (T, error) {
+	switch structFieldName {
+		case "id":
+			idValue, ok := (testStruct.id).T
+			if !ok {
+				return idValue, errors.New("id cannot be retrieved as requested type.")
+			}
+			return idValue, nil
+		case "name":
+			nameValue, ok := (testStruct.name).T
+			if !ok {
+				return nameValue, errors.New("name cannot be retrieved as requested type.")
+			}
+			return nameValue, nil
+		default:
+			return nil, errors.New(structFieldName + " not a valid struct field")
+	}
+}
+
+func (t TestStruct) Get(structFieldName string) (any, error) {
+	switch structFieldName {
+		case "id":
+			return t.id, nil
+		case "name":
+			return t.name, nil
+		default:
+			return nil, errors.New(structFieldName + " not a valid struct field")
+	}
 }
 
 func ScanForTestStruct(rows *sql.Rows, tester *TestStruct) error {
+
+	log.Println("tester inside ScanForTestStruct:", tester)
 
 	if rows == nil {
 		return errors.New("rows is nil inside ScanForTestStruct")
@@ -22,11 +58,14 @@ func ScanForTestStruct(rows *sql.Rows, tester *TestStruct) error {
 	// 	tester = new(TestStruct)
 	// }
 
-	id := tester.id
-	name := tester.name
+	idPointer := &tester.id
+	namePointer := &tester.name
 
-	scanError := rows.Scan(&id, &name)
-	
+	scanError := rows.Scan(idPointer, namePointer)
+
+	log.Println("idPointer inside ScanForTestStruct:", *idPointer)
+	log.Println("namePointer inside ScanForTestStruct:", *namePointer)
+
 	if scanError != nil {
 		return scanError
 	}
@@ -59,5 +98,22 @@ func TestQueryForStructs(t *testing.T) {
 		t.Fatal("error!", parseError.Error())
 	}
 
-	t.Log("testStructs", testStructs)
+	if len(testStructs) == 0 {
+		t.Fatal("no results in array!")		
+	}
+
+	if len(testStructs) > 1 {
+		t.Fatal("too many results in array!")		
+	}
+
+	receivedId := testStructs[0].id
+	receivedName := testStructs[0].name
+
+	if receivedId != 1 {
+		t.Fatal("did not receive expected id of 1! instead got", receivedId)
+	}
+
+	if receivedName != "david" {
+		t.Fatal("did not receive expected name of \"dave\"! instead got", receivedName)
+	}
 }

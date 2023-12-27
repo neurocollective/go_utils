@@ -62,12 +62,13 @@ func QueryForStructs[T any](
 			copy(newRowArray, rowArray)
 			rowArray = newRowArray
 		}
+        log.Println("receiverObject before:", receiverObject)
 
 		// scanError := rows.Scan()
 
 		scanError := scanRowToObject(rows, receiverObject)
 
-        log.Println("receiverObject:", receiverObject)
+        log.Println("receiverObject after:", receiverObject)
 
 		if scanError != nil {
             log.Println("scanError", scanError.Error())
