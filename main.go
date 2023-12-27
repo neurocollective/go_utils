@@ -2,6 +2,8 @@ package main
 
 import (
 	"github.com/neurocollective/go_utils/generator"
+	"log"
+	"os"
 )
 
 func main() {
@@ -15,15 +17,16 @@ func main() {
 	log.Println("cwd:", cwd)
 
 	fields := []map[string]string{
-		map[string]string{ "fieldName": "id", "type" : "int" },
-		map[string]string{ "fieldName": "name", "type": "string" },
+		map[string]string{"fieldName": "id", "type": "int"},
+		map[string]string{"fieldName": "name", "type": "string"},
 	}
 
-	config := g.GenerationConfig{
+	config := generator.GenerationConfig{
 		fields,
-		"TestStruct"
+		"TestStruct",
 		cwd + "/generated",
-		cwd + "/generator/index.templ"
+		cwd + "/generator/index.templ",
+		"generatorTest",
 	}
 
 	generator.Generate(config)

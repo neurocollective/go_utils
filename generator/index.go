@@ -30,7 +30,7 @@ func Generate(config GenerationConfig) {
 
 	formattedLines := make([]string, len(fileLines))
 
-	var funcFound bool
+	// var funcFound bool
 
 	for index, line := range fileLines {
 		log.Println(line)
@@ -42,17 +42,20 @@ func Generate(config GenerationConfig) {
 				log.Println("first line of template does not have a package declaration")
 				os.Exit(1)
 			}
-			formattedLines[index] = strings.Replace(line, "$packageName", config.PackageName)
+			formattedLines[index] = strings.Replace(line, "$packageName", config.PackageName, -1)
 			continue
 		}
 
-		if !funcFound {
-			funcFound := 
-		}
+		// if !funcFound {
+		// 	funcFound := 
+		// }
 	}
 
 	outputBytes := []byte(strings.Join(formattedLines, "\n"))
 
 	writeError := os.WriteFile(config.OutputPath, outputBytes, 0666)
 
+	if writeError != nil {
+		os.Exit(1)
+	}
 }
