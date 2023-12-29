@@ -47,11 +47,7 @@ func QueryForStructs[T any](
 	rowArray := make([]T, capacity, capacity)
 	var index int
 
-    // thereIsANextRow := rows.Next()
-
 	for rows.Next() {
-
-        log.Println("index:", index)
 
 		receiverObject := new(T)
 
@@ -62,13 +58,8 @@ func QueryForStructs[T any](
 			copy(newRowArray, rowArray)
 			rowArray = newRowArray
 		}
-        log.Println("receiverObject before:", receiverObject)
-
-		// scanError := rows.Scan()
 
 		scanError := scanRowToObject(rows, receiverObject)
-
-        log.Println("receiverObject after:", receiverObject)
 
 		if scanError != nil {
             log.Println("scanError", scanError.Error())
@@ -78,8 +69,6 @@ func QueryForStructs[T any](
 		rowArray[index] = *receiverObject
 		index++
 	}
-
-    log.Println("index:", index)
 
     getNextRowError := rows.Err()
 
