@@ -26,6 +26,12 @@ func BuildPostgresClient(connectionString string) (PGClient, error) {
 	return db, nil
 }
 
+func ScanRowNoOp[T any](rows *sql.Rows, object *T) error {
+	log.Println(rows)
+	log.Println(object)
+	return nil
+}
+
 func ReceiveRows[T any](rows *sql.Rows, scanRowToObject func(*sql.Rows, *T) error) ([]T, error) {
 
 	var empty []T
@@ -86,4 +92,21 @@ func QueryForStructs[T any](
 	}
 
 	return ReceiveRows[T](rows, scanRowToObject)
+}
+
+func SimpleQuery(
+	client PGClient, 
+	queryString string,
+	args ...any,
+) (error) {
+
+	rows, queryError := client.Query(queryString, args...)
+
+	if queryError != nil {
+		return queryError
+	}
+
+	_, receiveError := ReceiveRows[any](rows, ScanRowNoOp[any])
+
+	return receiveError
 }

@@ -59,9 +59,6 @@ func TestQueryForStructs(t *testing.T) {
 		t.Fatal("error getting client")
 	}
 
-	// query := "SELECT id, name from budget_user where id = $1;"
-	// args := []any{ 1 }
-
 	query := "SELECT id, name from budget_user where id = 1;"
 	args := []any{}
 
@@ -166,6 +163,45 @@ func TestInsertStructsQuery(t *testing.T) {
 	}
 
 	log.Println(testExpenditures)
+}
 
+func TestNoOpQuery(t *testing.T) {
 
+	db, getClientError := BuildPostgresClient("user=postgres password=postgres dbname=postgres sslmode=disable")
+
+	if getClientError != nil || db == nil {
+		t.Fatal("error getting client")
+	}
+
+	query := "SELECT now() as now;"
+	args := []any{}
+
+	testStructs, queryError := QueryForStructs[TestStruct](db, ScanRowNoOp[TestStruct], query, args...)
+
+	if queryError != nil {
+		t.Fatal("error!", queryError.Error())
+	}
+
+	if len(testStructs) > 1 {
+		t.Fatal("too many results in array!")		
+	}
+
+}
+
+func TestSimpleQuery(t *testing.T) {
+
+	db, getClientError := BuildPostgresClient("user=postgres password=postgres dbname=postgres sslmode=disable")
+
+	if getClientError != nil || db == nil {
+		t.Fatal("error getting client")
+	}
+
+	query := "SELECT now() as now;"
+	args := []any{}
+
+	queryError := SimpleQuery(db, query, args...)
+
+	if queryError != nil {
+		t.Fatal("error!", queryError.Error())
+	}
 }
