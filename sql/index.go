@@ -26,21 +26,9 @@ func BuildPostgresClient(connectionString string) (PGClient, error) {
 	return db, nil
 }
 
-// takes a struct-specific `scanRows`
-func QueryForStructs[T any](
-	client PGClient, 
-	scanRowToObject func(*sql.Rows, *T) error, 
-	queryString string,
-	args ...any,
-) ([]T, error) {
-
-	rows, queryError := client.Query(queryString, args...)
+func ReceiveRows[T any](rows *sql.Rows, scanRowToObject func(*sql.Rows, *T) error) ([]T, error) {
 
 	var empty []T
-
-	if queryError != nil {
-		return empty, queryError
-	}
 
 	capacity := 100
 
@@ -77,7 +65,25 @@ func QueryForStructs[T any](
         return empty, getNextRowError
     }
 
-    log.Println()
-
 	return rowArray[:index], nil
+
+}
+
+// takes a struct-specific `scanRows`
+func QueryForStructs[T any](
+	client PGClient, 
+	scanRowToObject func(*sql.Rows, *T) error, 
+	queryString string,
+	args ...any,
+) ([]T, error) {
+
+	var empty []T
+
+	rows, queryError := client.Query(queryString, args...)
+
+	if queryError != nil {
+		return empty, queryError
+	}
+
+	return ReceiveRows[T](rows, scanRowToObject)
 }

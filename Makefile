@@ -7,3 +7,5 @@ psql:
 	@psql "postgresql://postgres:postgres@localhost:5432/postgres"
 test/int:
 	go test -v ./sql
+ahab:
+	@docker rm -f local-pg
