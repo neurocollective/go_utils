@@ -3,6 +3,7 @@ package go_utils
 import (
 	"log"
 	"database/sql"
+	"strconv"
 
 	_ "github.com/lib/pq"
 )
@@ -98,7 +99,7 @@ func SimpleQuery(
 	client PGClient, 
 	queryString string,
 	args ...any,
-) (error) {
+) error {
 
 	rows, queryError := client.Query(queryString, args...)
 
@@ -109,4 +110,26 @@ func SimpleQuery(
 	_, receiveError := ReceiveRows[any](rows, ScanRowNoOp[any])
 
 	return receiveError
+}
+
+type SQLArgSequence struct {
+	Id int
+}
+
+func (as *SQLArgSequence) Next() int {
+	currentId := as.Id
+
+	if currentId == 0 {
+		as.Id += 1
+		currentId = 1
+	}
+
+	as.Id += 1
+	return currentId
+}
+
+func (as *SQLArgSequence) NextString() string {
+	id := as.Next()
+
+	return "$" + strconv.Itoa(id)
 }

@@ -5,7 +5,7 @@ db/local:
 	@psql -f db/initial_seed.sql "postgresql://postgres:postgres@localhost:5432/postgres"
 psql:
 	@psql "postgresql://postgres:postgres@localhost:5432/postgres"
-test/int:
+test/unit:
 	go test -v ./sql
 ahab:
 	@docker rm -f local-pg
