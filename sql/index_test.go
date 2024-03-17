@@ -1,20 +1,20 @@
- package go_utils
+package go_utils
 
 import (
-	"testing"
 	"database/sql"
-	"log"
 	"errors"
+	"log"
 	"strconv"
+	"testing"
 )
 
 type TestStruct struct {
-	id int `nc:"id"`
+	id   int    `nc:"id"`
 	name string `nc:"name"`
 }
 
 func (t TestStruct) GetStructKeys() []string {
-	return []string { "id", "name" }
+	return []string{"id", "name"}
 }
 
 func ScanForTestStruct(rows *sql.Rows, tester *TestStruct) error {
@@ -70,11 +70,11 @@ func ScanForTestStructIds(rows *sql.Rows, tester *TestStruct) error {
 // 	}
 
 // 	if len(testStructs) == 0 {
-// 		t.Fatal("no results in array!")		
+// 		t.Fatal("no results in array!")
 // 	}
 
 // 	if len(testStructs) > 1 {
-// 		t.Fatal("too many results in array!")		
+// 		t.Fatal("too many results in array!")
 // 	}
 
 // 	receivedId := testStructs[0].id
@@ -90,23 +90,23 @@ func ScanForTestStructIds(rows *sql.Rows, tester *TestStruct) error {
 // }
 
 type TestExpenditure struct {
-	Id int
-	UserId int
-	CategoryId *int
-	Value float32
-	Description string
+	Id           int
+	UserId       int
+	CategoryId   *int
+	Value        float32
+	Description  string
 	DateOccurred string
 }
 
 func TestInsertStructsQuery(t *testing.T) {
 
 	expenditures := []TestExpenditure{
-		TestExpenditure{ -1, 1, nil, 20.99, "Blockchain Backscratcher", "2023-12-30 21:49:01.172639+00" },
-		TestExpenditure{ -1, 1, nil, 900.00, "NOT Cocaine", "2023-12-30 21:49:01.172639+00" },
-		TestExpenditure{ -1, 1, nil, 4000.00, "Darkweb hitman", "2023-12-30 21:49:01.172639+00" },
+		TestExpenditure{-1, 1, nil, 20.99, "Blockchain Backscratcher", "2023-12-30 21:49:01.172639+00"},
+		TestExpenditure{-1, 1, nil, 900.00, "NOT Cocaine", "2023-12-30 21:49:01.172639+00"},
+		TestExpenditure{-1, 1, nil, 4000.00, "Darkweb hitman", "2023-12-30 21:49:01.172639+00"},
 	}
 
-	db, getClientError := BuildPostgresClient("user=postgres password=postgres dbname=postgres sslmode=disable")		
+	db, getClientError := BuildPostgresClient("user=postgres password=postgres dbname=postgres sslmode=disable")
 
 	if getClientError != nil || db == nil {
 		t.Fatal("error getting client")
@@ -123,29 +123,29 @@ func TestInsertStructsQuery(t *testing.T) {
 	for index, ex := range expenditures {
 
 		first := " $" + strconv.Itoa(argumentIndex) + ", "
-		args[argumentIndex - 1] = ex.UserId
+		args[argumentIndex-1] = ex.UserId
 		argumentIndex++
 
 		second := "$" + strconv.Itoa(argumentIndex) + ", "
-		args[argumentIndex - 1] = ex.CategoryId
+		args[argumentIndex-1] = ex.CategoryId
 		argumentIndex++
 
 		third := "$" + strconv.Itoa(argumentIndex) + ", "
-		args[argumentIndex - 1] = ex.Value
+		args[argumentIndex-1] = ex.Value
 		argumentIndex++
 
 		fourth := "$" + strconv.Itoa(argumentIndex) + ", "
-		args[argumentIndex - 1] = ex.Description
+		args[argumentIndex-1] = ex.Description
 		argumentIndex++
 
 		fifth := "$" + strconv.Itoa(argumentIndex)
-		args[argumentIndex - 1] = ex.DateOccurred
+		args[argumentIndex-1] = ex.DateOccurred
 		argumentIndex++
 
 		queryValues := "(nextval('expenditure_id_seq'),"
 
-		if index == len(expenditures) -1 {
-			queryValues += first + second + third + fourth + fifth + ")"			
+		if index == len(expenditures)-1 {
+			queryValues += first + second + third + fourth + fifth + ")"
 		} else {
 			queryValues += first + second + third + fourth + fifth + "), "
 		}
@@ -184,7 +184,7 @@ func TestNoOpQuery(t *testing.T) {
 	}
 
 	if len(testStructs) > 1 {
-		t.Fatal("too many results in array!")		
+		t.Fatal("too many results in array!")
 	}
 
 }

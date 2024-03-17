@@ -1,8 +1,8 @@
 package go_utils
 
 import (
-	"log"
 	"database/sql"
+	"log"
 	"strconv"
 
 	_ "github.com/lib/pq"
@@ -12,14 +12,14 @@ type PGClient interface {
 	Query(query string, args ...any) (*sql.Rows, error)
 }
 
-// 	connectionString -> "user=postgres password=postgres dbname=postgres sslmode=disable"
+// connectionString -> "user=postgres password=postgres dbname=postgres sslmode=disable"
 func BuildPostgresClient(connectionString string) (PGClient, error) {
 
 	db, err := sql.Open("postgres", connectionString)
 	if err != nil {
 
-        log.Println("ERROR opening postgres connection with github.com/neurocollective/go_utils.BuildPostgresClient() ->")
-        log.Println(err.Error())
+		log.Println("ERROR opening postgres connection with github.com/neurocollective/go_utils.BuildPostgresClient() ->")
+		log.Println(err.Error())
 
 		return nil, err
 	}
@@ -46,10 +46,10 @@ func ReceiveRows[T any](rows *sql.Rows, scanRowToObject func(*sql.Rows, *T) erro
 
 		receiverObject := new(T)
 
-		if index == capacity - 1 {
+		if index == capacity-1 {
 			capacity += 100
 			newRowArray := make([]T, 0, capacity)
-			
+
 			copy(newRowArray, rowArray)
 			rowArray = newRowArray
 		}
@@ -57,7 +57,7 @@ func ReceiveRows[T any](rows *sql.Rows, scanRowToObject func(*sql.Rows, *T) erro
 		scanError := scanRowToObject(rows, receiverObject)
 
 		if scanError != nil {
-            log.Println("scanError", scanError.Error())
+			log.Println("scanError", scanError.Error())
 			return empty, scanError
 		}
 
@@ -65,12 +65,12 @@ func ReceiveRows[T any](rows *sql.Rows, scanRowToObject func(*sql.Rows, *T) erro
 		index++
 	}
 
-    getNextRowError := rows.Err()
+	getNextRowError := rows.Err()
 
-    if getNextRowError != nil {
-        log.Println("error getting next row:", getNextRowError.Error())
-        return empty, getNextRowError
-    }
+	if getNextRowError != nil {
+		log.Println("error getting next row:", getNextRowError.Error())
+		return empty, getNextRowError
+	}
 
 	return rowArray[:index], nil
 
@@ -78,8 +78,8 @@ func ReceiveRows[T any](rows *sql.Rows, scanRowToObject func(*sql.Rows, *T) erro
 
 // takes a struct-specific `scanRows`
 func QueryForStructs[T any](
-	client PGClient, 
-	scanRowToObject func(*sql.Rows, *T) error, 
+	client PGClient,
+	scanRowToObject func(*sql.Rows, *T) error,
 	queryString string,
 	args ...any,
 ) ([]T, error) {
@@ -96,7 +96,7 @@ func QueryForStructs[T any](
 }
 
 func SimpleQuery(
-	client PGClient, 
+	client PGClient,
 	queryString string,
 	args ...any,
 ) error {
