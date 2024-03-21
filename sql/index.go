@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"log"
 	"strconv"
+	"errors"
 
 	_ "github.com/lib/pq"
 )
@@ -128,8 +129,104 @@ func (as *SQLArgSequence) Next() int {
 	return currentId
 }
 
+func (as *SQLArgSequence) NextN(n int) []int {
+
+	ids := make([]int, n, n)
+
+	for i := 0; i < n; i++ {
+		id := as.Next()
+		ids = append(ids, id)
+	}
+	return ids
+}
+
 func (as *SQLArgSequence) NextString() string {
 	id := as.Next()
 
 	return "$" + strconv.Itoa(id)
+}
+
+func (as *SQLArgSequence) NextNString(n int) []string {
+	args := make([]string, n, n)
+
+	for i := 0; i < n; i++ {
+		arg := as.NextString()
+		args = append(args, arg)
+	}
+	return args
+}
+
+type SQLReporter interface {
+	Keys() []string
+	Values() []any
+	Get(string) (error, any)
+	Set(string, any) error
+	TableName() string
+}
+
+// if a `nil` is passed in `[]S` this crashes.
+func InsertStructs[S SQLReporter](client PGClient, rows []S) error {
+
+	var tableName string
+
+	rowCount := len(rows)
+
+	if rowCount == 0 {
+		return errors.New("no rows, nothing to insert")
+	}
+
+	// handle a panic, possible if a value in rows is nil
+    defer func() {
+        if panicVal := recover(); panicVal != nil {
+			log.Println("InsertStructs() panic value:", panicVal)
+			return errors.New("nil passed to InsertStructs()")
+        }
+    }()
+
+	// will panic if nil
+	for _, row := range rows {
+		tableName := row.TableName(0)
+	}
+
+	if tableName == "" {
+		return errors.New("all rows are nil, nothing to insert")
+	}
+
+	var empty S
+
+	columnNames := strings.Join(empty.Keys(), ", ")
+	columnCount := len(columnNames)
+
+	query := strings.Builder{}
+
+	query.WriteString("INSERT INTO " + tableName)
+	query.WriteString("(" + columnNames + ")")
+	query.WriteString(+ "VALUES ")
+
+	size := rowCount * columnCount
+
+	values := make([]any, size, size)
+
+	seq := SQLArgSequence{}
+
+	for index, row := range rows {
+
+		last := index == rowCount - 1
+
+		column := columnNames[index]
+		values = append(values, row.Values()...)
+
+		nextArgs := seq.NextNString(columnCount)
+
+		query.WriteString("(")
+		query.WriteString(strings.Join(nextArgs, ", "))
+		query.WriteString(")")
+
+		if !last {
+			query.WriteString(",")
+		}
+	}
+
+	query.WriteString(";")
+
 }

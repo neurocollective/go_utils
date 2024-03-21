@@ -6,6 +6,7 @@ db/local:
 psql:
 	@psql "postgresql://postgres:postgres@localhost:5432/postgres"
 test/unit:
+	# requires running `make db/local` first
 	go test -v ./sql
 ahab:
 	@docker rm -f local-pg

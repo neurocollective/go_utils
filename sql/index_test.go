@@ -52,42 +52,42 @@ func ScanForTestStructIds(rows *sql.Rows, tester *TestStruct) error {
 }
 
 // this is an interation test, move later
-// func TestQueryForStructs(t *testing.T) {
+func TestQueryForStructs(t *testing.T) {
 
-// 	db, getClientError := BuildPostgresClient("user=postgres password=postgres dbname=postgres sslmode=disable")
+	db, getClientError := BuildPostgresClient("user=postgres password=postgres dbname=postgres sslmode=disable")
 
-// 	if getClientError != nil || db == nil {
-// 		t.Fatal("error getting client")
-// 	}
+	if getClientError != nil || db == nil {
+		t.Fatal("error getting client")
+	}
 
-// 	query := "SELECT id, name from budget_user where id = 1;"
-// 	args := []any{}
+	query := "SELECT id, name from budget_user where id = 1;"
+	args := []any{}
 
-// 	testStructs, parseError := QueryForStructs[TestStruct](db, ScanForTestStruct, query, args...)
+	testStructs, parseError := QueryForStructs[TestStruct](db, ScanForTestStruct, query, args...)
 
-// 	if parseError != nil {
-// 		t.Fatal("error!", parseError.Error())
-// 	}
+	if parseError != nil {
+		t.Fatal("error!", parseError.Error())
+	}
 
-// 	if len(testStructs) == 0 {
-// 		t.Fatal("no results in array!")
-// 	}
+	if len(testStructs) == 0 {
+		t.Fatal("no results in array!")
+	}
 
-// 	if len(testStructs) > 1 {
-// 		t.Fatal("too many results in array!")
-// 	}
+	if len(testStructs) > 1 {
+		t.Fatal("too many results in array!")
+	}
 
-// 	receivedId := testStructs[0].id
-// 	receivedName := testStructs[0].name
+	receivedId := testStructs[0].id
+	receivedName := testStructs[0].name
 
-// 	if receivedId != 1 {
-// 		t.Fatal("did not receive expected id of 1! instead got", receivedId)
-// 	}
+	if receivedId != 1 {
+		t.Fatal("did not receive expected id of 1! instead got", receivedId)
+	}
 
-// 	if receivedName != "david" {
-// 		t.Fatal("did not receive expected name of \"dave\"! instead got", receivedName)
-// 	}
-// }
+	if receivedName != "david" {
+		t.Fatal("did not receive expected name of \"dave\"! instead got", receivedName)
+	}
+}
 
 type TestExpenditure struct {
 	Id           int
