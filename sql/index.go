@@ -5,6 +5,7 @@ import (
 	"log"
 	"strconv"
 	"errors"
+	"strings"
 
 	_ "github.com/lib/pq"
 )
@@ -34,7 +35,7 @@ func ScanRowNoOp[T any](rows *sql.Rows, object *T) error {
 	return nil
 }
 
-func ReceiveRows[T any](rows *sql.Rows, scanRowToObject func(*sql.Rows, *T) error) ([]T, error) {
+func ReceiveRows[T SQLReporter](rows *sql.Rows, scanRowToObject func(*sql.Rows, T) error) ([]T, error) {
 
 	var empty []T
 
@@ -45,24 +46,39 @@ func ReceiveRows[T any](rows *sql.Rows, scanRowToObject func(*sql.Rows, *T) erro
 
 	for rows.Next() {
 
-		receiverObject := new(T)
+		// receiverObject := new(T)
+		var receiverObject T
+		// receiverPointer := &receiverObject
 
-		if index == capacity-1 {
-			capacity += 100
-			newRowArray := make([]T, 0, capacity)
+		log.Println("receiverObject:", receiverObject)
+		// log.Println("receiverPointer:", receiverPointer)
 
-			copy(newRowArray, rowArray)
-			rowArray = newRowArray
+		receiverPointer := receiverObject.Init()
+
+		log.Println("receiverPointer:", receiverPointer)
+
+		// if index == capacity-1 {
+		// 	capacity += 100
+		// 	newRowArray := make([]T, 0, capacity)
+
+		// 	copy(newRowArray, rowArray)
+		// 	rowArray = newRowArray
+		// }
+
+		asserted, ok := receiverPointer.(T)
+
+		if !ok {
+			return []T{}, errors.New("I don't even know")
 		}
 
-		scanError := scanRowToObject(rows, receiverObject)
+		scanError := scanRowToObject(rows, asserted)
 
 		if scanError != nil {
 			log.Println("scanError", scanError.Error())
 			return empty, scanError
 		}
 
-		rowArray[index] = *receiverObject
+		rowArray[index] = asserted
 		index++
 	}
 
@@ -78,9 +94,9 @@ func ReceiveRows[T any](rows *sql.Rows, scanRowToObject func(*sql.Rows, *T) erro
 }
 
 // takes a struct-specific `scanRows`
-func QueryForStructs[T any](
+func QueryForStructs[T SQLReporter](
 	client PGClient,
-	scanRowToObject func(*sql.Rows, *T) error,
+	scanRowToObject func(*sql.Rows, T) error,
 	queryString string,
 	args ...any,
 ) ([]T, error) {
@@ -96,22 +112,22 @@ func QueryForStructs[T any](
 	return ReceiveRows[T](rows, scanRowToObject)
 }
 
-func SimpleQuery(
-	client PGClient,
-	queryString string,
-	args ...any,
-) error {
+// func SimpleQuery(
+// 	client PGClient,
+// 	queryString string,
+// 	args ...any,
+// ) error {
 
-	rows, queryError := client.Query(queryString, args...)
+// 	rows, queryError := client.Query(queryString, args...)
 
-	if queryError != nil {
-		return queryError
-	}
+// 	if queryError != nil {
+// 		return queryError
+// 	}
 
-	_, receiveError := ReceiveRows[any](rows, ScanRowNoOp[any])
+// 	_, receiveError := ReceiveRows[SQLReporter](rows, ScanRowNoOp[any])
 
-	return receiveError
-}
+// 	return receiveError
+// }
 
 type SQLArgSequence struct {
 	Id int
@@ -151,7 +167,7 @@ func (as *SQLArgSequence) NextNString(n int) []string {
 
 	for i := 0; i < n; i++ {
 		arg := as.NextString()
-		args = append(args, arg)
+		args[i] = arg
 	}
 	return args
 }
@@ -159,15 +175,14 @@ func (as *SQLArgSequence) NextNString(n int) []string {
 type SQLReporter interface {
 	Keys() []string
 	Values() []any
-	Get(string) (error, any)
+	Get(string) (any, error)
 	Set(string, any) error
 	TableName() string
+	Init() SQLReporter
 }
 
 // if a `nil` is passed in `[]S` this crashes.
 func InsertStructs[S SQLReporter](client PGClient, rows []S) error {
-
-	var tableName string
 
 	rowCount := len(rows)
 
@@ -179,14 +194,10 @@ func InsertStructs[S SQLReporter](client PGClient, rows []S) error {
     defer func() {
         if panicVal := recover(); panicVal != nil {
 			log.Println("InsertStructs() panic value:", panicVal)
-			return errors.New("nil passed to InsertStructs()")
         }
     }()
 
-	// will panic if nil
-	for _, row := range rows {
-		tableName := row.TableName(0)
-	}
+	tableName := rows[0].TableName()
 
 	if tableName == "" {
 		return errors.New("all rows are nil, nothing to insert")
@@ -194,29 +205,35 @@ func InsertStructs[S SQLReporter](client PGClient, rows []S) error {
 
 	var empty S
 
-	columnNames := strings.Join(empty.Keys(), ", ")
-	columnCount := len(columnNames)
+	keys := empty.Keys()
+
+	columnNamesString := strings.Join(empty.Keys(), ", ")
+	columnCount := len(keys)
 
 	query := strings.Builder{}
 
 	query.WriteString("INSERT INTO " + tableName)
-	query.WriteString("(" + columnNames + ")")
-	query.WriteString(+ "VALUES ")
+	query.WriteString("(" + columnNamesString + ")")
+	query.WriteString(" VALUES ")
 
 	size := rowCount * columnCount
-
-	values := make([]any, size, size)
+	// log.Println("rowCount:", rowCount)
+	// log.Println("columnCount:", columnCount)
+	// log.Println("size:", size)
+	values := make([]any, 0, size)
 
 	seq := SQLArgSequence{}
 
+	// var topIndex int
 	for index, row := range rows {
-
+		
 		last := index == rowCount - 1
 
-		column := columnNames[index]
 		values = append(values, row.Values()...)
 
 		nextArgs := seq.NextNString(columnCount)
+
+		// log.Println("nextArgs:", nextArgs)
 
 		query.WriteString("(")
 		query.WriteString(strings.Join(nextArgs, ", "))
@@ -229,4 +246,52 @@ func InsertStructs[S SQLReporter](client PGClient, rows []S) error {
 
 	query.WriteString(";")
 
+	queryString := query.String()
+
+	log.Println("queryString", queryString)
+
+	_, err := client.Query(queryString, values...)
+
+	if err != nil {
+		log.Println("error running query:", queryString)
+		return err
+	}
+
+	return nil
+}
+
+func ScanRow[T SQLReporter](rows *sql.Rows, object T) error {
+
+	// if object == nil {
+	// 	return errors.New("ScanRow received a nil pointer")
+	// }
+
+	log.Println("object", object)
+
+	values := object.Values()
+
+	log.Println("values", values)
+
+	err := rows.Scan(values...)
+
+	if err != nil {
+		log.Println("SCAN ERRUR, BRUH")
+		return err
+	}
+
+	return nil
+}
+
+// if a `nil` is passed in `[]S` this crashes.
+func GetStructs[S SQLReporter](client PGClient, query string, args []any) ([]S, error) {
+
+	var empty []S
+
+	rows, queryError := client.Query(query, args...)
+
+	if queryError != nil {
+		return empty, queryError
+	}
+
+	return ReceiveRows[S](rows, ScanRow)
 }
