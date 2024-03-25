@@ -57,13 +57,13 @@ func ReceiveRows[T SQLReporter](rows *sql.Rows, scanRowToObject func(*sql.Rows, 
 
 		log.Println("receiverPointer:", receiverPointer)
 
-		// if index == capacity-1 {
-		// 	capacity += 100
-		// 	newRowArray := make([]T, 0, capacity)
+		if index == capacity-1 {
+			capacity += 100
+			newRowArray := make([]T, 0, capacity)
 
-		// 	copy(newRowArray, rowArray)
-		// 	rowArray = newRowArray
-		// }
+			copy(newRowArray, rowArray)
+			rowArray = newRowArray
+		}
 
 		asserted, ok := receiverPointer.(T)
 
