@@ -54,6 +54,7 @@ func (e Expenditure) Init() SQLMetaStruct {
 	eight := ""
 
 	new := new(Expenditure)
+
 	new.Id = &one
 	new.UserId = &two
 	new.CategoryId = &three

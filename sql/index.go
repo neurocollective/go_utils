@@ -295,3 +295,16 @@ func GetStructs[S SQLReporter](client PGClient, query string, args []any) ([]S, 
 
 	return ReceiveRows[S](rows, ScanRow)
 }
+
+func MetaQuery[S SQLMetaStruct](client PGClient, query string, args []any) ([]S, error) {
+
+	var empty []S
+
+	rows, queryError := client.Query(query, args...)
+
+	if queryError != nil {
+		return empty, queryError
+	}
+
+	return ReceiveRows[S](rows, ScanRow)
+}
