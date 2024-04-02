@@ -13,6 +13,7 @@ type SQLMetaStruct interface {
 	Get(string) (any, error)  // get a struct field by string key - defined by `ncsql:"fieldName"` tag 
 	TableName() string        // get the table name this struct targets
 	Init() SQLMetaStruct      // returns a pointer to the struct, with non-nil pointer fields
+	Zero() SQLMetaStruct
 }
 
 // a valid SQLReporter will need pointers as every field. `SQLReporter` implies this.
@@ -67,7 +68,9 @@ func (e Expenditure) Init() SQLMetaStruct {
 	return new
 }
 
-func (e *Expenditure) Zero() {
+func (e Expenditure) Zero() SQLMetaStruct {
+
+	new := Expenditure{}
 
 	one := 0
 	two := 0
@@ -78,14 +81,16 @@ func (e *Expenditure) Zero() {
 	seven := ""
 	eight := ""
 
-	e.Id = &one
-	e.UserId = &two
-	e.CategoryId = &three
-	e.Value = &four
-	e.Description = &five
-	e.DateOccurred = &six
-	e.CreateDate = &seven
-	e.ModifiedDate = &eight
+	new.Id = &one
+	new.UserId = &two
+	new.CategoryId = &three
+	new.Value = &four
+	new.Description = &five
+	new.DateOccurred = &six
+	new.CreateDate = &seven
+	new.ModifiedDate = &eight
+
+	return new
 }
 
 // this should be generated code, based on column names

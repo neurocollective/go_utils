@@ -35,7 +35,7 @@ func ScanRowNoOp[T any](rows *sql.Rows, object *T) error {
 	return nil
 }
 
-func ReceiveRows[T SQLMetaStruct](rows *sql.Rows, scanRowToObject func(*sql.Rows, T) error) ([]T, error) {
+func ReceiveRows[T SQLMetaStruct](rows *sql.Rows) ([]T, error) {
 
 	var empty []T
 
@@ -46,20 +46,17 @@ func ReceiveRows[T SQLMetaStruct](rows *sql.Rows, scanRowToObject func(*sql.Rows
 
 	for rows.Next() {
 
-		// receiverObject := new(T)
-		var receiverObject T
-		// receiverPointer := &receiverObject
+		var receiver T 
+		zeroedStruct := receiver.Zero()
 
-		log.Println("receiverObject:", receiverObject)
-		// log.Println("receiverPointer:", receiverPointer)
+		asserted, ok := zeroedStruct.(T)
 
-		receiverPointer := receiverObject.Init()
-
-		log.Println("receiverPointer:", receiverPointer)
-
-		for _, value := range receiverPointer.Values() {
-			log.Println(value)
+		if !ok {
+			log.Println("fuuuuuck")
+			return nil, errors.New("type assertion failed")
 		}
+
+		receiver = asserted
 
 		if index == capacity-1 {
 			capacity += 100
@@ -69,21 +66,15 @@ func ReceiveRows[T SQLMetaStruct](rows *sql.Rows, scanRowToObject func(*sql.Rows
 			rowArray = newRowArray
 		}
 
-		assertedType, ok := receiverPointer.(T)
 
-		if !ok {
-			 log.Printf("got data of type %T, not the asserted value:", receiverPointer)
-			return []T{}, errors.New("I don't even know")
+		err := ScanRow[T](rows, receiver)
+
+		if err != nil {
+			log.Println("scanError", err.Error())
+			return empty, err
 		}
 
-		scanError := scanRowToObject(rows, assertedType)
-
-		if scanError != nil {
-			log.Println("scanError", scanError.Error())
-			return empty, scanError
-		}
-
-		rowArray[index] = assertedType
+		rowArray[index] = receiver
 		index++
 	}
 
@@ -114,7 +105,7 @@ func QueryForStructs[T SQLMetaStruct](
 		return empty, queryError
 	}
 
-	return ReceiveRows[T](rows, scanRowToObject)
+	return ReceiveRows[T](rows)
 }
 
 // func SimpleQuery(
@@ -273,7 +264,7 @@ func ScanRow[T SQLMetaStruct](rows *sql.Rows, object T) error {
 
 	log.Println("object", object)
 
-	values := object.Values()
+	values := object.ValuesAll()
 
 	log.Println("values", values)
 
@@ -298,7 +289,7 @@ func GetStructs[S SQLMetaStruct](client PGClient, query string, args []any) ([]S
 		return empty, queryError
 	}
 
-	return ReceiveRows[S](rows, ScanRow)
+	return ReceiveRows[S](rows)
 }
 
 func MetaQuery[S SQLMetaStruct](client PGClient, query string, args []any) ([]S, error) {
@@ -311,5 +302,5 @@ func MetaQuery[S SQLMetaStruct](client PGClient, query string, args []any) ([]S,
 		return empty, queryError
 	}
 
-	return ReceiveRows[S](rows, ScanRow)
+	return ReceiveRows[S](rows)
 }
