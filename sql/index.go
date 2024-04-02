@@ -1,4 +1,4 @@
-package go_utils
+package sql
 
 import (
 	"database/sql"
@@ -35,7 +35,7 @@ func ScanRowNoOp[T any](rows *sql.Rows, object *T) error {
 	return nil
 }
 
-func ReceiveRows[T SQLReporter](rows *sql.Rows, scanRowToObject func(*sql.Rows, T) error) ([]T, error) {
+func ReceiveRows[T SQLMetaStruct](rows *sql.Rows, scanRowToObject func(*sql.Rows, T) error) ([]T, error) {
 
 	var empty []T
 
@@ -57,6 +57,10 @@ func ReceiveRows[T SQLReporter](rows *sql.Rows, scanRowToObject func(*sql.Rows, 
 
 		log.Println("receiverPointer:", receiverPointer)
 
+		for _, value := range receiverPointer.Values() {
+			log.Println(value)
+		}
+
 		if index == capacity-1 {
 			capacity += 100
 			newRowArray := make([]T, 0, capacity)
@@ -65,20 +69,21 @@ func ReceiveRows[T SQLReporter](rows *sql.Rows, scanRowToObject func(*sql.Rows, 
 			rowArray = newRowArray
 		}
 
-		asserted, ok := receiverPointer.(T)
+		assertedType, ok := receiverPointer.(T)
 
 		if !ok {
+			 log.Printf("got data of type %T, not the asserted value:", receiverPointer)
 			return []T{}, errors.New("I don't even know")
 		}
 
-		scanError := scanRowToObject(rows, asserted)
+		scanError := scanRowToObject(rows, assertedType)
 
 		if scanError != nil {
 			log.Println("scanError", scanError.Error())
 			return empty, scanError
 		}
 
-		rowArray[index] = asserted
+		rowArray[index] = assertedType
 		index++
 	}
 
@@ -94,7 +99,7 @@ func ReceiveRows[T SQLReporter](rows *sql.Rows, scanRowToObject func(*sql.Rows, 
 }
 
 // takes a struct-specific `scanRows`
-func QueryForStructs[T SQLReporter](
+func QueryForStructs[T SQLMetaStruct](
 	client PGClient,
 	scanRowToObject func(*sql.Rows, T) error,
 	queryString string,
@@ -182,7 +187,7 @@ type SQLReporter interface {
 }
 
 // if a `nil` is passed in `[]S` this crashes.
-func InsertStructs[S SQLReporter](client PGClient, rows []S) error {
+func InsertStructs[S SQLMetaStruct](client PGClient, rows []S) error {
 
 	rowCount := len(rows)
 
@@ -260,7 +265,7 @@ func InsertStructs[S SQLReporter](client PGClient, rows []S) error {
 	return nil
 }
 
-func ScanRow[T SQLReporter](rows *sql.Rows, object T) error {
+func ScanRow[T SQLMetaStruct](rows *sql.Rows, object T) error {
 
 	// if object == nil {
 	// 	return errors.New("ScanRow received a nil pointer")
@@ -283,7 +288,7 @@ func ScanRow[T SQLReporter](rows *sql.Rows, object T) error {
 }
 
 // if a `nil` is passed in `[]S` this crashes.
-func GetStructs[S SQLReporter](client PGClient, query string, args []any) ([]S, error) {
+func GetStructs[S SQLMetaStruct](client PGClient, query string, args []any) ([]S, error) {
 
 	var empty []S
 

@@ -1,4 +1,4 @@
-package go_utils
+package sql
 
 import (
 	// "database/sql"
@@ -37,9 +37,17 @@ func TestInsertStructsWithSQLMetaStruct(t *testing.T) {
 
 	log.Println("now selecting...")
 
-	query := "select name from expenditure;"
+	// UserId *int             `ncsql:"user_id",json:"userId"`
+	// CategoryId *int         `ncsql:"category_id",json:"categoryId"`
+	// Value *float32          `ncsql:"value",json:"value"`
+	// Description *string     `ncsql:"description",json:"description"`
+	// DateOccurred *string    `ncsql:"date_occurred",json:"dateOccurred"`
+	// CreateDate *string      `ncsql:"create_date",json:"createDate"`
+	// ModifiedDate *string    `ncsql:"modified_date",json:"modifiedDate"`
 
-	newRows, err := GetStructs[Expenditure](db, query, nil)
+	query := "select user_id, category_id, value, description, date_occurred, create_date, modified_date from expenditure;"
+
+	newRows, err := MetaQuery[Expenditure](db, query, nil)
 
 	if err != nil {
 		t.Fatal(err)

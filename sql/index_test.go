@@ -1,9 +1,9 @@
-package go_utils
+package sql
 
 import (
 	"database/sql"
 	"errors"
-	"log"
+	// "log"
 	//"strconv"
 	"testing"
 )
@@ -237,47 +237,47 @@ func TestSQLArgSequence(t *testing.T) {
 
 }
 
-func TestInsertStructs(t *testing.T) {
+// func TestInsertStructs(t *testing.T) {
 
-	db, err := BuildPostgresClient("user=postgres password=postgres dbname=postgres sslmode=disable")
+// 	db, err := BuildPostgresClient("user=postgres password=postgres dbname=postgres sslmode=disable")
 
-	if err != nil || db == nil {
-		t.Fatal("error getting client during TestInsertStructs()")
-	}
+// 	if err != nil || db == nil {
+// 		t.Fatal("error getting client during TestInsertStructs()")
+// 	}
 
-	one := "Johnny Asswipe"
-	two := "Imperialist Schill"
+// 	one := "Johnny Asswipe"
+// 	two := "Imperialist Schill"
 
-	users := []*BudgetUser{
-		&BudgetUser{ &one },
-		&BudgetUser{ &two },
-	}
+// 	users := []*BudgetUser{
+// 		&BudgetUser{ &one },
+// 		&BudgetUser{ &two },
+// 	}
 
-	err = InsertStructs[*BudgetUser](db, users)
+// 	err = InsertStructs[*BudgetUser](db, users)
 
-	if err != nil {
-		t.Fatal(err)
-	}
+// 	if err != nil {
+// 		t.Fatal(err)
+// 	}
 
-	log.Println("now selecting...")
+// 	log.Println("now selecting...")
 
-	query := "select name from budget_user;"
+// 	query := "select name from budget_user;"
 
-	newRows, err := GetStructs[*BudgetUser](db, query, nil)
+// 	newRows, err := GetStructs[*BudgetUser](db, query, nil)
 
-	if err != nil {
-		t.Fatal(err)
-	}
+// 	if err != nil {
+// 		t.Fatal(err)
+// 	}
 
-	t.Log(newRows)
+// 	t.Log(newRows)
 
-	for i, newRow := range newRows {
+// 	for i, newRow := range newRows {
 
-		newName := *newRow.Name
-		oldName := *users[i].Name
+// 		newName := *newRow.Name
+// 		oldName := *users[i].Name
 
-		if newName != oldName {
-			t.Fatal(err)
-		}
-	}
-}
+// 		if newName != oldName {
+// 			t.Fatal(err)
+// 		}
+// 	}
+// }
