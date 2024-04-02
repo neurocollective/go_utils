@@ -67,6 +67,27 @@ func (e Expenditure) Init() SQLMetaStruct {
 	return new
 }
 
+func (e *Expenditure) Zero() {
+
+	one := 0
+	two := 0
+	three := 0
+	four := float32(0)
+	five := ""
+	six := ""
+	seven := ""
+	eight := ""
+
+	e.Id = &one
+	e.UserId = &two
+	e.CategoryId = &three
+	e.Value = &four
+	e.Description = &five
+	e.DateOccurred = &six
+	e.CreateDate = &seven
+	e.ModifiedDate = &eight
+}
+
 // this should be generated code, based on column names
 func (e Expenditure) Keys() []string {
 	return []string{
