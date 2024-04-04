@@ -6,6 +6,8 @@ import (
 	"strconv"
 	"errors"
 	"strings"
+	"fmt"
+	"reflect"
 
 	_ "github.com/lib/pq"
 )
@@ -52,7 +54,7 @@ func ReceiveRows[T SQLMetaStruct](rows *sql.Rows) ([]T, error) {
 		asserted, ok := zeroedStruct.(T)
 
 		if !ok {
-			log.Println("fuuuuuck")
+			log.Printf("type: %T", zeroedStruct)
 			return nil, errors.New("type assertion failed")
 		}
 
@@ -262,11 +264,26 @@ func ScanRow[T SQLMetaStruct](rows *sql.Rows, object T) error {
 	// 	return errors.New("ScanRow received a nil pointer")
 	// }
 
-	log.Println("object", object)
+	fmt.Printf("OBJECT: %+v\n", object)
+	// log.Println("object", object)
 
-	values := object.ValuesAll()
+	values := object.Values()
 
-	log.Println("values", values)
+	fmt.Printf("VALUES: %+v\n", values)
+
+	for _, value := range values {
+		fmt.Printf("VALUE: %+v\n", value)
+		fmt.Println("VALUE type:", reflect.TypeOf(value))
+	}
+
+
+	// log.Println("values", values)
+
+	// for _, v := range values {
+	// 	fmt.Println("Indirect type is:", reflect.Indirect(reflect.ValueOf(v)).Elem().Type()) // prints main.CustomStruct
+
+	// 	fmt.Println("Indirect value type is:", reflect.Indirect(reflect.ValueOf(v)).Elem().Kind()) // prints struct
+	// }
 
 	err := rows.Scan(values...)
 
