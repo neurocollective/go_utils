@@ -179,8 +179,73 @@ type SQLReporter interface {
 	Init() SQLReporter
 }
 
+func ScanRow[T SQLMetaStruct](rows *sql.Rows, object T) error {
+
+	fmt.Printf("OBJECT: %+v\n", object)
+
+	values := object.Values()
+
+	fmt.Printf("VALUES: %+v\n", values)
+
+	for _, value := range values {
+		fmt.Printf("VALUE: %+v\n", value)
+		fmt.Println("VALUE type:", reflect.TypeOf(value))
+	}
+
+	err := rows.Scan(values...)
+
+	if err != nil {
+		log.Println("SCAN ERRUR, BRUH")
+		return err
+	}
+
+	return nil
+}
+
 // if a `nil` is passed in `[]S` this crashes.
-func InsertStructs[S SQLMetaStruct](client PGClient, rows []S) error {
+func GetStructs[S SQLMetaStruct](client PGClient, query string, args []any) ([]S, error) {
+
+	var empty []S
+
+	rows, queryError := client.Query(query, args...)
+
+	if queryError != nil {
+		return empty, queryError
+	}
+
+	return ReceiveRows[S](rows)
+}
+
+func MetaQuery[S SQLMetaStruct](client PGClient, query string, args []any) ([]S, error) {
+
+	var empty []S
+
+	rows, queryError := client.Query(query, args...)
+
+	if queryError != nil {
+		return empty, queryError
+	}
+
+	return ReceiveRows[S](rows)
+}
+
+/* begin intended API */
+
+func Select[S SQLMetaStruct](client PGClient, query string, args []any) ([]S, error) {
+
+	var empty []S
+
+	rows, queryError := client.Query(query, args...)
+
+	if queryError != nil {
+		return empty, queryError
+	}
+
+	return ReceiveRows[S](rows)
+}
+
+// if a `nil` is passed in `[]S` this crashes.
+func Insert[S SQLMetaStruct](client PGClient, rows []S) error {
 
 	rowCount := len(rows)
 
@@ -258,66 +323,81 @@ func InsertStructs[S SQLMetaStruct](client PGClient, rows []S) error {
 	return nil
 }
 
-func ScanRow[T SQLMetaStruct](rows *sql.Rows, object T) error {
+// if a `nil` is passed in `[]S` this crashes.
+func Update[S SQLMetaStruct](client PGClient, rows []S) error {
 
-	// if object == nil {
-	// 	return errors.New("ScanRow received a nil pointer")
-	// }
+	rowCount := len(rows)
 
-	fmt.Printf("OBJECT: %+v\n", object)
-	// log.Println("object", object)
-
-	values := object.Values()
-
-	fmt.Printf("VALUES: %+v\n", values)
-
-	for _, value := range values {
-		fmt.Printf("VALUE: %+v\n", value)
-		fmt.Println("VALUE type:", reflect.TypeOf(value))
+	if rowCount == 0 {
+		return errors.New("no rows, nothing to insert")
 	}
 
+	// handle a panic, possible if a value in rows is nil
+    defer func() {
+        if panicVal := recover(); panicVal != nil {
+			log.Println("InsertStructs() panic value:", panicVal)
+        }
+    }()
 
-	// log.Println("values", values)
+	tableName := rows[0].TableName()
 
-	// for _, v := range values {
-	// 	fmt.Println("Indirect type is:", reflect.Indirect(reflect.ValueOf(v)).Elem().Type()) // prints main.CustomStruct
+	if tableName == "" {
+		return errors.New("all rows are nil, nothing to insert")
+	}
 
-	// 	fmt.Println("Indirect value type is:", reflect.Indirect(reflect.ValueOf(v)).Elem().Kind()) // prints struct
-	// }
+	var empty S
 
-	err := rows.Scan(values...)
+	keys := empty.Keys()
+
+	columnNamesString := strings.Join(empty.Keys(), ", ")
+	columnCount := len(keys)
+
+	query := strings.Builder{}
+
+	query.WriteString("UPDATE " + tableName)
+	query.WriteString("SET (" + columnNamesString + ")")
+	query.WriteString(" WHERE id = ") // https://stackoverflow.com/questions/18797608/update-multiple-rows-in-same-query-using-postgresql
+
+	size := rowCount * columnCount
+	// log.Println("rowCount:", rowCount)
+	// log.Println("columnCount:", columnCount)
+	// log.Println("size:", size)
+	values := make([]any, 0, size)
+
+	seq := SQLArgSequence{}
+
+	// var topIndex int
+	for index, row := range rows {
+		
+		last := index == rowCount - 1
+
+		values = append(values, row.Values()...)
+
+		nextArgs := seq.NextNString(columnCount)
+
+		// log.Println("nextArgs:", nextArgs)
+
+		query.WriteString("(")
+		query.WriteString(strings.Join(nextArgs, ", "))
+		query.WriteString(")")
+
+		if !last {
+			query.WriteString(",")
+		}
+	}
+
+	query.WriteString(";")
+
+	queryString := query.String()
+
+	log.Println("queryString", queryString)
+
+	_, err := client.Query(queryString, values...)
 
 	if err != nil {
-		log.Println("SCAN ERRUR, BRUH")
+		log.Println("error running query:", queryString)
 		return err
 	}
 
 	return nil
-}
-
-// if a `nil` is passed in `[]S` this crashes.
-func GetStructs[S SQLMetaStruct](client PGClient, query string, args []any) ([]S, error) {
-
-	var empty []S
-
-	rows, queryError := client.Query(query, args...)
-
-	if queryError != nil {
-		return empty, queryError
-	}
-
-	return ReceiveRows[S](rows)
-}
-
-func MetaQuery[S SQLMetaStruct](client PGClient, query string, args []any) ([]S, error) {
-
-	var empty []S
-
-	rows, queryError := client.Query(query, args...)
-
-	if queryError != nil {
-		return empty, queryError
-	}
-
-	return ReceiveRows[S](rows)
 }
