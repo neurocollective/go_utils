@@ -324,75 +324,59 @@ func Insert[S SQLMetaStruct](client PGClient, rows []S) error {
 }
 
 // if a `nil` is passed in `[]S` this crashes.
-func Update[S SQLMetaStruct](client PGClient, rows []S) error {
+func Update[S SQLMetaStruct](client PGClient, row S) error {
 
-	rowCount := len(rows)
-
-	if rowCount == 0 {
-		return errors.New("no rows, nothing to insert")
-	}
-
-	// handle a panic, possible if a value in rows is nil
+	// handle a panic, possible if row is nil
     defer func() {
         if panicVal := recover(); panicVal != nil {
 			log.Println("InsertStructs() panic value:", panicVal)
         }
     }()
 
-	tableName := rows[0].TableName()
+	tableName := row.TableName()
 
 	if tableName == "" {
-		return errors.New("all rows are nil, nothing to insert")
+		return errors.New("all row is nil, nothing to insert")
 	}
 
-	var empty S
+	keys := row.Keys()
+	values := row.Values()
 
-	keys := empty.Keys()
+	seq := SQLArgSequence{}
 
-	columnNamesString := strings.Join(empty.Keys(), ", ")
+	columnNamesString := strings.Join(row.Keys(), ", ")
 	columnCount := len(keys)
+
+	args := make([]any, 0, columnCount)
 
 	query := strings.Builder{}
 
 	query.WriteString("UPDATE " + tableName)
-	query.WriteString("SET (" + columnNamesString + ")")
-	query.WriteString(" WHERE id = ") // https://stackoverflow.com/questions/18797608/update-multiple-rows-in-same-query-using-postgresql
+	query.WriteString("SET ( ")
 
-	size := rowCount * columnCount
-	// log.Println("rowCount:", rowCount)
-	// log.Println("columnCount:", columnCount)
-	// log.Println("size:", size)
-	values := make([]any, 0, size)
+	for index, column := range keys {
+		value := values[index]
+		query.WriteString(column)
+		query.WriteString(" = ")
+		query.WriteString(seq.NextString())
 
-	seq := SQLArgSequence{}
+		args = append(args, value)
 
-	// var topIndex int
-	for index, row := range rows {
-		
-		last := index == rowCount - 1
-
-		values = append(values, row.Values()...)
-
-		nextArgs := seq.NextNString(columnCount)
-
-		// log.Println("nextArgs:", nextArgs)
-
-		query.WriteString("(")
-		query.WriteString(strings.Join(nextArgs, ", "))
-		query.WriteString(")")
-
-		if !last {
-			query.WriteString(",")
+		if index < len(keys) - 1 {
+			query.WriteString(", ")
 		}
 	}
 
+	query.WriteString(" )")
+	query.WriteString(" WHERE id = ")
+	query.WriteString(seq.NextString())
 	query.WriteString(";")
 
 	queryString := query.String()
 
 	log.Println("queryString", queryString)
 
-	_, err := client.Query(queryString, values...)
+	_, err := client.Query(queryString, args...)
 
 	if err != nil {
 		log.Println("error running query:", queryString)

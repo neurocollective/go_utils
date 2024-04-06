@@ -6,7 +6,8 @@ import (
 )
 
 type SQLMetaStruct interface {
-	Keys() []string           // get the struct pointer names as strings, in db column order
+	GetId() *int               // get the id
+	Keys() []string           // get the struct pointer names as strings equal to column names, in db column order
 	Values() []any            // get the struct pointer values in db column order
 	KeysAll() []string        // get the struct pointer names as strings, in db column order, including id
 	ValuesAll() []any         // get the struct pointer values in db column order, including id
@@ -42,6 +43,10 @@ CREATE table expenditure (
 );
 
 */
+
+func (e Expenditure) GetId() *int {
+	return e.Id
+}
 
 func (e Expenditure) Init() SQLMetaStruct {
 
