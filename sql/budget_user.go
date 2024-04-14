@@ -1,8 +1,8 @@
 package sql
 
 import (
-	"log"
 	"errors"
+	"log"
 )
 
 // a valid SQLReporter will need pointers as every field. `SQLReporter` implies this.

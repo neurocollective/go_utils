@@ -2,15 +2,26 @@ package sql
 
 import (
 	"database/sql"
-	"log"
-	"strconv"
 	"errors"
-	"strings"
 	"fmt"
+	"log"
 	"reflect"
+	"strconv"
+	"strings"
 
 	_ "github.com/lib/pq"
 )
+
+type SQLMetaStruct interface {
+	GetId() *int             // get the id
+	Keys() []string          // get the struct pointer names as strings equal to column names, in db column order
+	Values() []any           // get the struct pointer values in db column order
+	KeysAll() []string       // get the struct pointer names as strings, in db column order, including id
+	ValuesAll() []any        // get the struct pointer values in db column order, including id
+	Get(string) (any, error) // get a struct field by string key - defined by `ncsql:"fieldName"` tag
+	TableName() string       // get the table name this struct targets
+	Zero() SQLMetaStruct     // returns a SQLMetaStruct, with non-nil pointer fields
+}
 
 type PGClient interface {
 	Query(query string, args ...any) (*sql.Rows, error)
@@ -31,11 +42,11 @@ func BuildPostgresClient(connectionString string) (PGClient, error) {
 	return db, nil
 }
 
-func ScanRowNoOp[T any](rows *sql.Rows, object *T) error {
-	log.Println(rows)
-	log.Println(object)
-	return nil
-}
+// func ScanRowNoOp[T any](rows *sql.Rows, object *T) error {
+// 	log.Println(rows)
+// 	log.Println(object)
+// 	return nil
+// }
 
 func ReceiveRows[T SQLMetaStruct](rows *sql.Rows) ([]T, error) {
 
@@ -48,7 +59,7 @@ func ReceiveRows[T SQLMetaStruct](rows *sql.Rows) ([]T, error) {
 
 	for rows.Next() {
 
-		var receiver T 
+		var receiver T
 		zeroedStruct := receiver.Zero()
 
 		asserted, ok := zeroedStruct.(T)
@@ -67,7 +78,6 @@ func ReceiveRows[T SQLMetaStruct](rows *sql.Rows) ([]T, error) {
 			copy(newRowArray, rowArray)
 			rowArray = newRowArray
 		}
-
 
 		err := ScanRow[T](rows, receiver)
 
@@ -109,23 +119,6 @@ func QueryForStructs[T SQLMetaStruct](
 
 	return ReceiveRows[T](rows)
 }
-
-// func SimpleQuery(
-// 	client PGClient,
-// 	queryString string,
-// 	args ...any,
-// ) error {
-
-// 	rows, queryError := client.Query(queryString, args...)
-
-// 	if queryError != nil {
-// 		return queryError
-// 	}
-
-// 	_, receiveError := ReceiveRows[SQLReporter](rows, ScanRowNoOp[any])
-
-// 	return receiveError
-// }
 
 type SQLArgSequence struct {
 	Id int
@@ -202,35 +195,6 @@ func ScanRow[T SQLMetaStruct](rows *sql.Rows, object T) error {
 	return nil
 }
 
-// if a `nil` is passed in `[]S` this crashes.
-func GetStructs[S SQLMetaStruct](client PGClient, query string, args []any) ([]S, error) {
-
-	var empty []S
-
-	rows, queryError := client.Query(query, args...)
-
-	if queryError != nil {
-		return empty, queryError
-	}
-
-	return ReceiveRows[S](rows)
-}
-
-func MetaQuery[S SQLMetaStruct](client PGClient, query string, args []any) ([]S, error) {
-
-	var empty []S
-
-	rows, queryError := client.Query(query, args...)
-
-	if queryError != nil {
-		return empty, queryError
-	}
-
-	return ReceiveRows[S](rows)
-}
-
-/* begin intended API */
-
 func Select[S SQLMetaStruct](client PGClient, query string, args []any) ([]S, error) {
 
 	var empty []S
@@ -254,11 +218,11 @@ func Insert[S SQLMetaStruct](client PGClient, rows []S) error {
 	}
 
 	// handle a panic, possible if a value in rows is nil
-    defer func() {
-        if panicVal := recover(); panicVal != nil {
-			log.Println("InsertStructs() panic value:", panicVal)
-        }
-    }()
+	defer func() {
+		if panicVal := recover(); panicVal != nil {
+			log.Println("Insert() panic value:", panicVal)
+		}
+	}()
 
 	tableName := rows[0].TableName()
 
@@ -289,8 +253,8 @@ func Insert[S SQLMetaStruct](client PGClient, rows []S) error {
 
 	// var topIndex int
 	for index, row := range rows {
-		
-		last := index == rowCount - 1
+
+		last := index == rowCount-1
 
 		values = append(values, row.Values()...)
 
@@ -323,27 +287,14 @@ func Insert[S SQLMetaStruct](client PGClient, rows []S) error {
 	return nil
 }
 
-/*
-
-sql_reporter_test.go:48: NEW ROWS: [{0xc000012df0 0xc000012df8 0xc000012e00 0xc000012e08 0xc000028640 0xc000028650 0xc000028660 0xc000028670}]
-queryString UPDATE expenditure SET user_id = $1, category_id = $2, value = $3, description = $4, date_occurred = $5, create_date = $6, modified_date = $7 WHERE id = $8;
-error running query: UPDATE expenditure SET user_id = $1, category_id = $2, value = $3, description = $4, date_occurred = $5, create_date = $6, modified_date = $7 WHERE id = $8;
-sql_reporter_test.go:69: pq: got 7 parameters but the statement requires 8
-
-
-*/
-
-// if a `nil` is passed in `[]S` this crashes.
-// https://dba.stackexchange.com/questions/246753/updating-multiple-values-at-a-time
-// ^ allow multiple rows to be updated at a time?
 func Update[S SQLMetaStruct](client PGClient, row S) error {
 
 	// handle a panic, possible if row is nil
-    defer func() {
-        if panicVal := recover(); panicVal != nil {
+	defer func() {
+		if panicVal := recover(); panicVal != nil {
 			log.Println("InsertStructs() panic value:", panicVal)
-        }
-    }()
+		}
+	}()
 
 	tableName := row.TableName()
 
@@ -360,7 +311,7 @@ func Update[S SQLMetaStruct](client PGClient, row S) error {
 	// columnNamesString := strings.Join(row.Keys(), ", ")
 	columnCount := len(keys)
 
-	args := make([]any, 0, columnCount + 1)
+	args := make([]any, 0, columnCount+1)
 
 	query := strings.Builder{}
 
@@ -375,7 +326,7 @@ func Update[S SQLMetaStruct](client PGClient, row S) error {
 
 		args = append(args, value)
 
-		if index < len(keys) - 1 {
+		if index < len(keys)-1 {
 			query.WriteString(", ")
 		}
 	}

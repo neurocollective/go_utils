@@ -22,7 +22,7 @@ func TestInsertStructsWithSQLMetaStruct(t *testing.T) {
 	six := "2024-03-25 01:58:08.789206+00"
 	seven := "2024-03-25 01:58:08.789206+00"
 
-	expenditures := []Expenditure{ Expenditure{ &zero, &one, &two, &three, &four, &five, &six, &seven } }
+	expenditures := []Expenditure{Expenditure{&zero, &one, &two, &three, &four, &five, &six, &seven}}
 
 	log.Println("inserting...")
 
