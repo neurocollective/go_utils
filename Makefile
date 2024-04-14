@@ -7,8 +7,12 @@ db/local/down:
 	@docker rm -f local-pg
 psql:
 	@psql "postgresql://postgres:postgres@localhost:5432/postgres"
-test/int:
+test/unit:
 	make db/local
-	go test -v ./sql
+	go test -v ./sql/index.go
+test/int:
+	docker rm -f local-pg
+	make db/local
+	go test -v ./sql/index.go ./sql/sql_reporter.go ./sql/sql_reporter_test.go -run TestInsertStructsWithSQLMetaStruct
 ahab:
-	@docker rm -f local-pg
+	@docker rm -f local-go

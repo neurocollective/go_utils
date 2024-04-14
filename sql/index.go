@@ -324,6 +324,8 @@ func Insert[S SQLMetaStruct](client PGClient, rows []S) error {
 }
 
 // if a `nil` is passed in `[]S` this crashes.
+// https://dba.stackexchange.com/questions/246753/updating-multiple-values-at-a-time
+// ^ allow multiple rows to be updated at a time?
 func Update[S SQLMetaStruct](client PGClient, row S) error {
 
 	// handle a panic, possible if row is nil
@@ -344,7 +346,7 @@ func Update[S SQLMetaStruct](client PGClient, row S) error {
 
 	seq := SQLArgSequence{}
 
-	columnNamesString := strings.Join(row.Keys(), ", ")
+	// columnNamesString := strings.Join(row.Keys(), ", ")
 	columnCount := len(keys)
 
 	args := make([]any, 0, columnCount)
