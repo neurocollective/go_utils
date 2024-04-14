@@ -1,7 +1,6 @@
 package sql
 
 import (
-	// "log"
 	"errors"
 )
 
@@ -13,8 +12,7 @@ type SQLMetaStruct interface {
 	ValuesAll() []any         // get the struct pointer values in db column order, including id
 	Get(string) (any, error)  // get a struct field by string key - defined by `ncsql:"fieldName"` tag 
 	TableName() string        // get the table name this struct targets
-	Init() SQLMetaStruct      // returns a pointer to the struct, with non-nil pointer fields
-	Zero() SQLMetaStruct
+	Zero() SQLMetaStruct      // returns a SQLMetaStruct, with non-nil pointer fields
 }
 
 // a valid SQLReporter will need pointers as every field. `SQLReporter` implies this.
@@ -46,31 +44,6 @@ CREATE table expenditure (
 
 func (e Expenditure) GetId() *int {
 	return e.Id
-}
-
-func (e Expenditure) Init() SQLMetaStruct {
-
-	one := 0
-	two := 0
-	three := 0
-	four := float32(0)
-	five := ""
-	six := ""
-	seven := ""
-	eight := ""
-
-	new := new(Expenditure)
-
-	new.Id = &one
-	new.UserId = &two
-	new.CategoryId = &three
-	new.Value = &four
-	new.Description = &five
-	new.DateOccurred = &six
-	new.CreateDate = &seven
-	new.ModifiedDate = &eight
-
-	return new
 }
 
 func (e Expenditure) Zero() SQLMetaStruct {

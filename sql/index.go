@@ -183,7 +183,7 @@ func ScanRow[T SQLMetaStruct](rows *sql.Rows, object T) error {
 
 	fmt.Printf("OBJECT: %+v\n", object)
 
-	values := object.Values()
+	values := object.ValuesAll()
 
 	fmt.Printf("VALUES: %+v\n", values)
 
@@ -323,6 +323,16 @@ func Insert[S SQLMetaStruct](client PGClient, rows []S) error {
 	return nil
 }
 
+/*
+
+sql_reporter_test.go:48: NEW ROWS: [{0xc000012df0 0xc000012df8 0xc000012e00 0xc000012e08 0xc000028640 0xc000028650 0xc000028660 0xc000028670}]
+queryString UPDATE expenditure SET user_id = $1, category_id = $2, value = $3, description = $4, date_occurred = $5, create_date = $6, modified_date = $7 WHERE id = $8;
+error running query: UPDATE expenditure SET user_id = $1, category_id = $2, value = $3, description = $4, date_occurred = $5, create_date = $6, modified_date = $7 WHERE id = $8;
+sql_reporter_test.go:69: pq: got 7 parameters but the statement requires 8
+
+
+*/
+
 // if a `nil` is passed in `[]S` this crashes.
 // https://dba.stackexchange.com/questions/246753/updating-multiple-values-at-a-time
 // ^ allow multiple rows to be updated at a time?
@@ -343,18 +353,19 @@ func Update[S SQLMetaStruct](client PGClient, row S) error {
 
 	keys := row.Keys()
 	values := row.Values()
+	allValues := row.ValuesAll()
 
 	seq := SQLArgSequence{}
 
 	// columnNamesString := strings.Join(row.Keys(), ", ")
 	columnCount := len(keys)
 
-	args := make([]any, 0, columnCount)
+	args := make([]any, 0, columnCount + 1)
 
 	query := strings.Builder{}
 
 	query.WriteString("UPDATE " + tableName)
-	query.WriteString("SET ( ")
+	query.WriteString(" SET ")
 
 	for index, column := range keys {
 		value := values[index]
@@ -369,7 +380,6 @@ func Update[S SQLMetaStruct](client PGClient, row S) error {
 		}
 	}
 
-	query.WriteString(" )")
 	query.WriteString(" WHERE id = ")
 	query.WriteString(seq.NextString())
 	query.WriteString(";")
@@ -378,7 +388,9 @@ func Update[S SQLMetaStruct](client PGClient, row S) error {
 
 	log.Println("queryString", queryString)
 
-	_, err := client.Query(queryString, args...)
+	allArgs := append(args, allValues[0])
+
+	_, err := client.Query(queryString, allArgs...)
 
 	if err != nil {
 		log.Println("error running query:", queryString)
