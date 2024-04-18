@@ -174,21 +174,12 @@ type SQLReporter interface {
 
 func ScanRow[T SQLMetaStruct](rows *sql.Rows, object T) error {
 
-	fmt.Printf("OBJECT: %+v\n", object)
-
 	values := object.ValuesAll()
-
-	fmt.Printf("VALUES: %+v\n", values)
-
-	for _, value := range values {
-		fmt.Printf("VALUE: %+v\n", value)
-		fmt.Println("VALUE type:", reflect.TypeOf(value))
-	}
 
 	err := rows.Scan(values...)
 
 	if err != nil {
-		log.Println("SCAN ERRUR, BRUH")
+		log.Println("scan error during ScanRow[T ncsql.SQLMetaStruct](...)")
 		return err
 	}
 
