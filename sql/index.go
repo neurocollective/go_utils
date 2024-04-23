@@ -3,9 +3,7 @@ package sql
 import (
 	"database/sql"
 	"errors"
-	"fmt"
 	"log"
-	"reflect"
 	"strconv"
 	"strings"
 
