@@ -15,3 +15,9 @@ test/int:
 	go test -v ./sql/index.go ./sql/expenditure.go ./sql/sql_reporter_test.go -run TestInsertStructsWithSQLMetaStruct
 ahab:
 	@docker rm -f local-go
+zip:
+	zip -r test.zip ./test_in
+unzip:
+	unzip ./test.zip -d ./test_out
+uncrip:
+	unzip ./test.dec.zip -d ./test_out
