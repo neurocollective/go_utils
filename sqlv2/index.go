@@ -24,14 +24,14 @@ type Column interface {
 }
 
 type Expenditure struct {
-	Id           sql.Null[int]     `ncsql:"id",json:"id"`
-	UserId       sql.Null[int]     `ncsql:"user_id",json:"userId"`
-	CategoryId   sql.Null[int]     `ncsql:"category_id",json:"categoryId"`
-	Value        sql.Null[float32] `ncsql:"value",json:"value"`
-	Description  sql.Null[string]  `ncsql:"description",json:"description"`
-	DateOccurred sql.Null[string]  `ncsql:"date_occurred",json:"dateOccurred"`
-	CreateDate   sql.Null[string]  `ncsql:"create_date",json:"createDate"`
-	ModifiedDate sql.Null[string]  `ncsql:"modified_date",json:"modifiedDate"`
+	Id           int     `ncsql:"id",json:"id"`
+	UserId       int     `ncsql:"user_id",json:"userId"`
+	CategoryId   int     `ncsql:"category_id",json:"categoryId"`
+	Value        float32 `ncsql:"value",json:"value"`
+	Description  string  `ncsql:"description",json:"description"`
+	DateOccurred string  `ncsql:"date_occurred",json:"dateOccurred"`
+	CreateDate   string  `ncsql:"create_date",json:"createDate"`
+	ModifiedDate string  `ncsql:"modified_date",json:"modifiedDate"`
 }
 
 type Column = sql.Null[sql.Value]

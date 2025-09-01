@@ -15,3 +15,5 @@ test/int:
 	go test -v ./sql/index.go ./sql/expenditure.go ./sql/sql_reporter_test.go -run TestInsertStructsWithSQLMetaStruct
 ahab:
 	@docker rm -f local-go
+fmt:
+	@go fmt ./db ./sql

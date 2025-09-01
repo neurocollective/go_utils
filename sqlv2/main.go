@@ -2,10 +2,14 @@ package main
 
 import (
 	"fmt"
+	"log"
+	"os"
 	"database/sql"
+
+	_ "github.com/lib/pq"
 )
 
-func BuildPostgresClient(connectionString string) (sql.DB, error) {
+func BuildPostgresClient(connectionString string) (*sql.DB, error) {
 
 	db, err := sql.Open("postgres", connectionString)
 	if err != nil {
@@ -28,10 +32,16 @@ func main() {
 		os.Exit(1)
 	}
 
-	rows, queryError := client.Query(queryString, args...)
+	queryString := "select * from expenditure;"
+	args := []any{}
 
-	if queryError != nil {
-		return empty, queryError
+	rows, err := client.Query(queryString, args...)
+
+	if err != nil {
+		fmt.Println("error connecting to be", err)
+		os.Exit(1)
 	}
+
+	log.Println(rows)
 
 }
