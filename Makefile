@@ -14,6 +14,6 @@ test/int:
 	make db/local
 	go test -v ./sql/index.go ./sql/expenditure.go ./sql/sql_reporter_test.go -run TestInsertStructsWithSQLMetaStruct
 ahab:
-	@docker rm -f local-go
+	@docker rm -f sql-test-pg
 fmt:
-	@go fmt ./db ./sql
+	@go fmt ./db ./sql ./sqlv2

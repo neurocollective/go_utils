@@ -1,10 +1,10 @@
 package main
 
 import (
+	"database/sql"
 	"fmt"
 	"log"
 	"os"
-	"database/sql"
 
 	_ "github.com/lib/pq"
 )
@@ -32,16 +32,49 @@ func main() {
 		os.Exit(1)
 	}
 
-	queryString := "select * from expenditure;"
-	args := []any{}
+	// begin insert
 
-	rows, err := client.Query(queryString, args...)
+	// expenditure := Expenditure{
+	// 	UserId: &NotNull[int]{1,true},
+	// 	CategoryId: &sql.Null[int]{0,false},
+	// 	Value: &NotNull[float32]{45.99,true},
+	// 	Description: &NotNull[string]{"stuff",true},
+	// }
+
+	// err = InsertExpenditure(client, expenditure)
+
+	// if err != nil {
+	// 	fmt.Println("error inserting", err)
+	// 	os.Exit(1)
+	// }
+
+	// log.Println("inserted??")
+
+	// end insert
+
+	var e Expenditure
+
+	queryString := "select " + e.ColumnsString() + " from " + e.TableName() + ";"
+	log.Println("queryString:", queryString)
+
+	//args := []any{}
+
+	rows, err := client.Query(queryString)
 
 	if err != nil {
 		fmt.Println("error connecting to be", err)
 		os.Exit(1)
 	}
 
-	log.Println(rows)
+	expenditures, err := ReceiveExpenditures(rows)
+
+	if err != nil {
+		fmt.Println("error receiving rows", err)
+		os.Exit(1)
+	}
+
+	for _, expenditure := range expenditures {
+		expenditure.Print()
+	}
 
 }
